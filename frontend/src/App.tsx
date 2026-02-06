@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import CaseList from './pages/CaseList';
 import Dashboard from './pages/Dashboard';
-import CaseForm from './pages/CaseForm.1';
+import CaseForm from './pages/CaseForm';
 import CaseDetail from './pages/CaseDetail';
 import PatientHistory from './pages/PatientHistory';
 import Layout from './components/Layout';

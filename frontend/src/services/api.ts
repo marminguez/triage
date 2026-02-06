@@ -1,6 +1,7 @@
 import type { Case, CaseInput } from '../types';
 
-const API_URL = 'http://localhost:3001/api/cases';
+// Use environment variable or default to relative path (handled by proxy/rewrites)
+const API_URL = import.meta.env.VITE_API_URL || '/api/cases';
 
 export const api = {
     getCases: async (): Promise<Case[]> => {

@@ -8,8 +8,7 @@ export default function CaseDetail() {
     const { id } = useParams();
     const [caseItem, setCaseItem] = useState<Case | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState<Partial<Case>>({});
+    // const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (id) loadCase(id);
@@ -19,7 +18,8 @@ export default function CaseDetail() {
         try {
             const data = await api.getCase(caseId);
             setCaseItem(data);
-            setEditForm(data);
+            setCaseItem(data);
+            // setEditForm(data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -27,23 +27,7 @@ export default function CaseDetail() {
         }
     };
 
-    const handleSave = async () => {
-        if (!caseItem || !editForm) return;
-        try {
-            setLoading(true);
-            const updated = await api.updateCase(caseItem.id, editForm);
-            setCaseItem(updated);
-            setIsEditing(false);
-        } catch (error) {
-            alert('Error al actualizar el caso');
-        } finally {
-            setLoading(false);
-        }
-    };
 
-    const handleChange = (field: keyof Case, value: any) => {
-        setEditForm(prev => ({ ...prev, [field]: value }));
-    };
 
     if (loading) return <div className="p-8 text-center bg-white dark:bg-slate-900 dark:text-white">Cargando detalles...</div>;
     if (!caseItem) return <div className="p-8 text-center text-red-500">Caso no encontrado</div>;
