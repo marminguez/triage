@@ -98,4 +98,4 @@ def ml_score():
 
 if __name__ == '__main__':
     load_model()
-    app.run(port=5001, debug=True)
+    app.run(port=5001, debug=False)
