@@ -26,7 +26,16 @@ export interface Case {
     priority: 'ALTA' | 'MEDIA' | 'BAJA';
     priority_reason_codes: string[];
     priority_explanation: string;
+    risk_factors?: {
+        aislamiento: number;
+        incidencias: number;
+        funcional: number;
+        adherencia: number;
+    };
     previous_priority?: 'ALTA' | 'MEDIA' | 'BAJA' | null;
+
+    agreed_guidelines?: string;
+    next_appointment?: string;
 
     notes?: string;
     createdAt: string;

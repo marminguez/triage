@@ -53,6 +53,9 @@ router.post('/', async (req, res) => {
         incidentFrequency: parseInt(inputData.incidents_last_7d) || 0,
         functionalDifficulties: (inputData.mobility_limitations || inputData.cognitive_difficulty_flag) ? 1 : 0,
 
+        agreed_guidelines: inputData.agreed_guidelines || '',
+        next_appointment: inputData.next_appointment || '',
+
         notes: inputData.notes || '',
 
         // Computed Fields
@@ -60,6 +63,7 @@ router.post('/', async (req, res) => {
         priority: vulnerabilityAnalysis.priority,
         priority_reason_codes: vulnerabilityAnalysis.priority_reason_codes,
         priority_explanation: vulnerabilityAnalysis.priority_explanation,
+        risk_factors: vulnerabilityAnalysis.risk_factors,
         previous_priority: null, // Initial creation has no previous priority
 
         createdAt: new Date().toISOString()
@@ -90,12 +94,15 @@ router.put('/:id', async (req, res) => {
         mobility_limitations: inputData.mobility_limitations !== undefined ? !!inputData.mobility_limitations : existingCase.mobility_limitations,
         cognitive_difficulty_flag: inputData.cognitive_difficulty_flag !== undefined ? !!inputData.cognitive_difficulty_flag : existingCase.cognitive_difficulty_flag,
         whatsapp_chatbot_enabled: inputData.whatsapp_chatbot_enabled !== undefined ? !!inputData.whatsapp_chatbot_enabled : existingCase.whatsapp_chatbot_enabled,
+        agreed_guidelines: inputData.agreed_guidelines !== undefined ? inputData.agreed_guidelines : existingCase.agreed_guidelines,
+        next_appointment: inputData.next_appointment !== undefined ? inputData.next_appointment : existingCase.next_appointment,
 
         // Update Calculated Fields
         score: vulnerabilityAnalysis.score,
         priority: vulnerabilityAnalysis.priority,
         priority_reason_codes: vulnerabilityAnalysis.priority_reason_codes,
         priority_explanation: vulnerabilityAnalysis.priority_explanation,
+        risk_factors: vulnerabilityAnalysis.risk_factors,
         previous_priority: existingCase.priority, // Store what it was before this update
 
         updatedAt: new Date().toISOString()

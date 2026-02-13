@@ -27,7 +27,7 @@ export default function CaseList() {
             (c.id || '').toLowerCase().includes(searchTerm.toLowerCase());
         const matchesPriority = priorityFilter ? c.priority === priorityFilter : true;
         return matchesSearch && matchesPriority;
-    });
+    }).sort((a, b) => (b.score || 0) - (a.score || 0));
 
     const statusColors: Record<string, string> = {
         'new': 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300',

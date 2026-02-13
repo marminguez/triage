@@ -64,6 +64,52 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
                             <span className="text-xs text-[#616f89] dark:text-slate-400 font-medium">Contacto Emergencia</span>
                             <span className="text-sm font-medium">Ana García (Hija)</span>
                         </div>
+
+                    </div>
+
+                </div>
+
+                {/* Case Management Fields */}
+                <div className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-6 mt-4">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Plan de Intervención</h3>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Próxima Cita</label>
+                        <input
+                            type="datetime-local"
+                            className="w-full text-sm p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:outline-none"
+                            value={caseItem.next_appointment || ''}
+                            onChange={async (e) => {
+                                const newVal = e.target.value;
+                                setCaseItem(prev => prev ? ({ ...prev, next_appointment: newVal }) : null);
+                                try {
+                                    await api.updateCase(caseItem.id, { next_appointment: newVal });
+                                } catch (err) {
+                                    console.error(err);
+                                }
+                            }}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Pautas Acordadas</label>
+                        <textarea
+                            rows={3}
+                            className="w-full text-sm p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-primary focus:outline-none resize-none"
+                            placeholder="Escriba aquí las pautas..."
+                            value={caseItem.agreed_guidelines || ''}
+                            onChange={(e) => {
+                                const newVal = e.target.value;
+                                setCaseItem(prev => prev ? ({ ...prev, agreed_guidelines: newVal }) : null);
+                            }}
+                            onBlur={async (e) => {
+                                try {
+                                    await api.updateCase(caseItem.id, { agreed_guidelines: caseItem.agreed_guidelines });
+                                } catch (err) {
+                                    console.error(err);
+                                }
+                            }}
+                        />
                     </div>
                 </div>
 
@@ -139,7 +185,7 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
                     </div>
                 </div>
             </div>
-        </aside>
+        </aside >
     );
 }
 

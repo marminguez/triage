@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import CaseForm from './pages/CaseForm';
 import CaseDetail from './pages/CaseDetail';
 import PatientHistory from './pages/PatientHistory';
+import Companion from './pages/Companion';
 import Layout from './components/Layout';
 
 import SettingsIntegrations from './pages/SettingsIntegrations';
@@ -16,6 +17,7 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/companion" element={<Companion />} />
         <Route path="/history/:id" element={<PatientHistory />} />
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/reports" element={<Reports />} />

@@ -84,7 +84,7 @@ export default function PatientHistory() {
                         <PatientTimeline />
 
                         {/* AI Insights and Next Steps */}
-                        <PatientAIInsights />
+                        <PatientAIInsights caseItem={caseItem} />
                     </div>
                 </div>
 
