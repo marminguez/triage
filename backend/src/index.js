@@ -17,7 +17,9 @@ app.get('/api/health', (req, res) => {
 });
 
 const caseRoutes = require('./routes/cases');
+const checkInRoutes = require('./routes/checkins');
 app.use('/api/cases', caseRoutes);
+app.use('/api/case', checkInRoutes);
 
 // Only start the server if this file is run directly (not imported)
 if (require.main === module) {

@@ -154,12 +154,13 @@ export default function CaseList() {
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[25%]">Nombre</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[10%]">Fecha</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[10%]">Edad</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[15%]">Estado</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[20%]">Nivel de Vulnerabilidad</th>
-                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[20%]">Motivo Principal</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[20%]">Nombre</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[8%]">Fecha</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[6%]">Edad</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[10%]">Estado</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[14%]">Último check-in</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[14%]">Nivel de Vulnerabilidad</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider w-[18%]">Motivo Principal</th>
                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right w-[10%]">Acciones</th>
                             </tr>
                         </thead>
@@ -174,8 +175,34 @@ export default function CaseList() {
                                                     {getInitials(c.fullName)}
                                                 </div>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">{c.fullName}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-semibold text-slate-900 dark:text-white">{c.fullName}</span>
+                                                        {c.lastCheckInAt && (() => {
+                                                            const checkInDate = new Date(c.lastCheckInAt);
+                                                            const now = new Date();
+                                                            const hoursSince = (now.getTime() - checkInDate.getTime()) / (1000 * 60 * 60);
+
+                                                            if (hoursSince < 24) {
+                                                                const severityColors = {
+                                                                    critical: 'bg-red-500 animate-pulse',
+                                                                    high: 'bg-orange-500',
+                                                                    medium: 'bg-yellow-500',
+                                                                    low: 'bg-green-500'
+                                                                };
+                                                                const color = severityColors[c.lastSeverity || 'low'];
+                                                                return (
+                                                                    <span className={`size-2 rounded-full ${color}`} title={`Check-in reciente: ${c.lastSeverity}`}></span>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })()}
+                                                    </div>
                                                     <span className="text-xs text-slate-500 dark:text-slate-400">ID: {c.id.substring(0, 8)}</span>
+                                                    {c.lastCheckInSummary && (
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500 italic mt-0.5 max-w-[200px] truncate">
+                                                            "{c.lastCheckInSummary}"
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
@@ -187,6 +214,33 @@ export default function CaseList() {
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold capitalize ${statusColors[c.status] || statusColors['new']}`}>
                                                 {statusLabels[c.status] || 'Nuevo'}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            {c.lastCheckInAt ? (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs text-slate-600 dark:text-slate-300">
+                                                            {new Date(c.lastCheckInAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
+                                                            {' '}
+                                                            {new Date(c.lastCheckInAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {(c.lastSeverity === 'high' || c.lastSeverity === 'critical') && (
+                                                            <span className="material-symbols-outlined text-red-500 text-[16px]" title="Alerta">
+                                                                warning
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${c.lastSeverity === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                                                            c.lastSeverity === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                                                c.lastSeverity === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                                        }`}>
+                                                        {c.lastSeverity?.toUpperCase()}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400 italic">Sin check-in</span>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${priorityColors[c.priority || 'BAJA']}`}>

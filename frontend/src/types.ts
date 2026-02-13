@@ -37,9 +37,26 @@ export interface Case {
     agreed_guidelines?: string;
     next_appointment?: string;
 
+    // Check-in fields
+    lastCheckInAt?: string;
+    lastSeverity?: 'low' | 'medium' | 'high' | 'critical';
+    lastCheckInSummary?: string;
+    manualPriorityOverride?: boolean;
+
     notes?: string;
     createdAt: string;
     updatedAt?: string;
+}
+
+export interface DailyCheckIn {
+    id: string;
+    caseId: string;
+    createdAt: string;
+    moodLevel?: number;
+    freeText: string;
+    redFlags: string[];
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    actionSuggested: string;
 }
 
 export type CaseInput = Omit<Case, 'id' | 'createdAt' | 'updatedAt' | 'score' | 'priority' | 'priority_reason_codes' | 'priority_explanation' | 'previous_priority'> & {

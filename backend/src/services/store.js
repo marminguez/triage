@@ -1,6 +1,7 @@
 // In-memory storage abstraction
 // WARNING: Data is lost when the process restarts (e.g., serverless cold start)
 let cases = [];
+let checkIns = [];
 
 const getAll = () => cases;
 
@@ -19,9 +20,24 @@ const update = (id, updates) => {
     return cases[index];
 };
 
+// Check-in methods
+const addCheckIn = (checkIn) => {
+    checkIns.push(checkIn);
+    return checkIn;
+};
+
+const getCheckInsByCase = (caseId, limit = 10) => {
+    return checkIns
+        .filter(c => c.caseId === caseId)
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, limit);
+};
+
 module.exports = {
     getAll,
     getById,
     add,
-    update
+    update,
+    addCheckIn,
+    getCheckInsByCase
 };

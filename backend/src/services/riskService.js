@@ -234,11 +234,60 @@ const getRiskAssessment = async (caseData, previousPriority) => {
 
     const assessment = calculateVulnerabilityScore(caseData);
 
+    // Apply check-in severity boost
+    let checkInBoost = 0;
+    let checkInExplanation = '';
+    let checkInReasonCode = '';
+
+    if (caseData.lastSeverity) {
+        switch (caseData.lastSeverity) {
+            case 'critical':
+                checkInBoost = 35;
+                checkInExplanation = 'Ajuste por check-in de hoy: +35 puntos (severidad: CRÍTICA)';
+                checkInReasonCode = 'CHECKIN_CRITICAL';
+                break;
+            case 'high':
+                checkInBoost = 20;
+                checkInExplanation = 'Ajuste por check-in de hoy: +20 puntos (severidad: ALTA)';
+                checkInReasonCode = 'CHECKIN_HIGH';
+                break;
+            case 'medium':
+                checkInBoost = 10;
+                checkInExplanation = 'Ajuste por check-in de hoy: +10 puntos (severidad: MEDIA)';
+                checkInReasonCode = 'CHECKIN_MEDIUM';
+                break;
+            case 'low':
+                // No boost for low severity, but we can mention it
+                checkInExplanation = 'Check-in reciente: estado positivo';
+                checkInReasonCode = 'CHECKIN_LOW';
+                break;
+        }
+    }
+
+    const finalScore = Math.min(100, assessment.score + checkInBoost);
+
+    // Recalculate priority based on boosted score
+    let finalPriority = 'BAJA';
+    if (finalScore >= 70) finalPriority = 'ALTA';
+    else if (finalScore >= 40) finalPriority = 'MEDIA';
+
+    // Update explanation to include check-in boost
+    let finalExplanation = assessment.priority_explanation;
+    if (checkInExplanation) {
+        finalExplanation += `. ${checkInExplanation}`;
+    }
+
+    // Add check-in reason code if applicable
+    const finalReasonCodes = [...assessment.priority_reason_codes];
+    if (checkInReasonCode && checkInBoost > 0) {
+        finalReasonCodes.push(checkInReasonCode);
+    }
+
     return {
-        score: assessment.score,
-        priority: assessment.priority,
-        priority_reason_codes: assessment.priority_reason_codes,
-        priority_explanation: assessment.priority_explanation,
+        score: finalScore,
+        priority: finalPriority,
+        priority_reason_codes: finalReasonCodes,
+        priority_explanation: finalExplanation,
         // Return detailed factors for the UI if needed
         risk_factors: assessment.factors
     };

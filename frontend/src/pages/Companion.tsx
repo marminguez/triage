@@ -1,14 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import type { Case } from '../types';
-import { Send } from 'lucide-react';
+import { Send, AlertTriangle } from 'lucide-react';
 
 interface Message {
     id: string;
     text: string;
     sender: 'user' | 'bot';
     timestamp: Date;
+    isEmergency?: boolean;
+    showEmojiButtons?: boolean;
 }
 
 export default function Companion() {
@@ -20,6 +22,17 @@ export default function Companion() {
     const [inputValue, setInputValue] = useState('');
     const [loading, setLoading] = useState(true);
     const [showQuickActions, setShowQuickActions] = useState(true);
+    const [hasCompletedDailyCheckIn, setHasCompletedDailyCheckIn] = useState(false);
+    const [submittingCheckIn, setSubmittingCheckIn] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
 
     useEffect(() => {
         if (!caseId) {
@@ -39,7 +52,17 @@ export default function Companion() {
                     sender: 'bot',
                     timestamp: new Date()
                 };
-                setMessages([greeting]);
+
+                // Daily check-in prompt
+                const checkInPrompt: Message = {
+                    id: (Date.now() + 1).toString(),
+                    text: 'Antes de nada: ¿cómo te encuentras hoy?',
+                    sender: 'bot',
+                    timestamp: new Date(),
+                    showEmojiButtons: true
+                };
+
+                setMessages([greeting, checkInPrompt]);
             } catch (err) {
                 console.error('Error loading case:', err);
                 const errorMsg: Message = {
@@ -55,14 +78,124 @@ export default function Companion() {
         })();
     }, [caseId]);
 
-    const addMessage = (text: string, sender: 'user' | 'bot') => {
+    const addMessage = (text: string, sender: 'user' | 'bot', isEmergency = false, showEmojiButtons = false) => {
         const newMessage: Message = {
             id: Date.now().toString() + Math.random(),
             text,
             sender,
-            timestamp: new Date()
+            timestamp: new Date(),
+            isEmergency,
+            showEmojiButtons
         };
         setMessages(prev => [...prev, newMessage]);
+    };
+
+    const handleEmojiCheckIn = async (emoji: string, statusText: string) => {
+        if (!caseId) return;
+
+        // Add user message
+        addMessage(`${emoji} ${statusText}`, 'user');
+        setHasCompletedDailyCheckIn(true);
+        setShowQuickActions(false);
+
+        await handleCheckIn(`Hoy estoy ${statusText.toLowerCase()}`);
+    };
+
+    const handleCheckIn = async (statusText: string) => {
+        if (!caseId || !statusText.trim()) return;
+
+        setSubmittingCheckIn(true);
+
+        try {
+            const response = await api.submitCheckIn(caseId, statusText);
+            const { checkIn, updatedCase } = response;
+
+            // Check if this is a fall-related incident
+            const hasFall = checkIn.redFlags?.includes('fall');
+
+            // Generate bot response based on severity
+            let botResponses: string[] = [];
+
+            switch (checkIn.severity) {
+                case 'critical':
+                    // Two separate messages for CRITICAL
+                    botResponses.push('Si necesitas ayuda inmediata, llama al 112 ahora mismo.');
+                    botResponses.push('He registrado esto como URGENTE y he enviado un aviso a tu asistente social.');
+
+                    // Add fall-specific warning if applicable
+                    if (hasFall) {
+                        botResponses.push('Si estás en el suelo o te has golpeado, no intentes levantarte rápido. Busca apoyo y pide ayuda.');
+                    }
+                    break;
+
+                case 'high':
+                    botResponses.push('Lo siento. Lo he registrado y voy a enviar un aviso a tu asistente social para que te contacten lo antes posible.\n\nSi te sientes insegura o necesitas ayuda ya, llama al 112 o pide ayuda a alguien cercano.');
+
+                    // Add fall-specific warning if applicable
+                    if (hasFall) {
+                        botResponses.push('Si estás en el suelo o te has golpeado, no intentes levantarte rápido. Busca apoyo y pide ayuda.');
+                    }
+                    break;
+
+                case 'medium':
+                    botResponses.push('Gracias por contármelo. Lo he registrado.\n\n¿Quieres decirme qué es lo que más te preocupa ahora?');
+                    break;
+
+                case 'low':
+                    botResponses.push('Gracias por decírmelo 😊 Me alegro. Si necesitas algo, escríbeme.');
+                    break;
+            }
+
+            // Add all bot responses
+            for (const response of botResponses) {
+                const isEmergency = checkIn.severity === 'critical';
+                addMessage(response, 'bot', isEmergency);
+                // Small delay between messages for readability
+                if (botResponses.length > 1) {
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                }
+            }
+
+            // Add confirmation message
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+            const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const severityLabel = checkIn.severity === 'critical' ? 'CRÍTICA' :
+                checkIn.severity === 'high' ? 'ALTA' :
+                    checkIn.severity === 'medium' ? 'MEDIA' : 'BAJA';
+
+            const confirmationMsg = `Registro guardado: ${dateStr} ${timeStr} – Severidad: ${severityLabel}`;
+            addMessage(confirmationMsg, 'bot');
+
+            // Update case data with new score/priority
+            setCaseData(prev => prev ? { ...prev, ...updatedCase } : null);
+
+        } catch (err) {
+            console.error('Error submitting check-in:', err);
+            addMessage('Lo siento, hubo un error al registrar tu estado. Por favor, intenta de nuevo.', 'bot');
+        } finally {
+            setSubmittingCheckIn(false);
+        }
+    };
+
+    const isStatusMessage = (text: string): boolean => {
+        const lowerText = text.toLowerCase().trim();
+        return lowerText.startsWith('hoy:') ||
+            lowerText.startsWith('hoy ') ||
+            lowerText.startsWith('me encuentro') ||
+            lowerText.startsWith('estoy ');
+    };
+
+    // Check if message contains concerning keywords that should trigger monitoring
+    const containsConcerningKeywords = (text: string): boolean => {
+        const lowerText = text.toLowerCase();
+        const concerningWords = [
+            'mal', 'dolor', 'caí', 'caída', 'mareo', 'mareado', 'confuso',
+            'no puedo', 'ayuda', 'urgente', 'sangre', 'pecho', 'respirar',
+            'desmayo', 'golpe', 'triste', 'ansioso', 'miedo', 'solo',
+            'medicación', 'olvidé', 'no he comido', 'no he bebido'
+        ];
+        return concerningWords.some(word => lowerText.includes(word));
     };
 
     const generateBotResponse = (userMessage: string): string => {
@@ -99,28 +232,42 @@ export default function Companion() {
         }
 
         // Default response
-        return 'Entiendo. ¿En qué más puedo ayudarte? Puedes preguntarme sobre tu medicación, citas o pedirme que te explique tus pautas.';
+        return 'Entiendo. ¿En qué más puedo ayudarte? Puedes preguntarme sobre tu medicación, citas o contarme cómo te encuentras.';
     };
 
-    const handleSendMessage = () => {
+    const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
 
-        // Add user message
-        addMessage(inputValue, 'user');
-        setShowQuickActions(false);
+        const userText = inputValue;
 
-        // Generate and add bot response
+        // Add user message
+        addMessage(userText, 'user');
+        setShowQuickActions(false);
+        setInputValue('');
+
+        // ALWAYS check if message contains concerning keywords or is a status message
+        // This allows continuous monitoring throughout the conversation
+        if (isStatusMessage(userText) || containsConcerningKeywords(userText)) {
+            // Submit as check-in to track and monitor
+            await handleCheckIn(userText);
+            return;
+        }
+
+        // Generate and add bot response for non-concerning messages
         setTimeout(() => {
-            const response = generateBotResponse(inputValue);
+            const response = generateBotResponse(userText);
             addMessage(response, 'bot');
         }, 500);
-
-        setInputValue('');
     };
 
     const handleQuickAction = (action: string) => {
-        setInputValue(action);
-        handleSendMessage();
+        addMessage(action, 'user');
+        setShowQuickActions(false);
+
+        setTimeout(() => {
+            const response = generateBotResponse(action);
+            addMessage(response, 'bot');
+        }, 500);
     };
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -170,33 +317,77 @@ export default function Companion() {
             {/* Messages Container */}
             <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
                 {messages.map((message) => (
-                    <div
-                        key={message.id}
-                        className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
+                    <div key={message.id}>
                         <div
-                            className={`max-w-[75%] rounded-lg px-4 py-2 shadow-sm ${message.sender === 'user'
-                                    ? 'bg-[#dcf8c6] text-gray-800'
-                                    : 'bg-white text-gray-800'
-                                }`}
+                            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            <p className="text-base leading-relaxed whitespace-pre-wrap">{message.text}</p>
-                            <p className="text-xs text-gray-500 mt-1 text-right">
-                                {message.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                            <div
+                                className={`max-w-[75%] rounded-lg px-4 py-2 shadow-sm ${message.isEmergency
+                                    ? 'bg-red-100 border-2 border-red-500 text-gray-900'
+                                    : message.sender === 'user'
+                                        ? 'bg-[#dcf8c6] text-gray-800'
+                                        : 'bg-white text-gray-800'
+                                    }`}
+                            >
+                                {message.isEmergency && (
+                                    <div className="flex items-center gap-2 mb-2 text-red-600">
+                                        <AlertTriangle size={20} />
+                                        <span className="font-bold text-sm">EMERGENCIA</span>
+                                    </div>
+                                )}
+                                <p className="text-base leading-relaxed whitespace-pre-wrap">{message.text}</p>
+                                <p className="text-xs text-gray-500 mt-1 text-right">
+                                    {message.timestamp.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
                         </div>
+
+                        {/* Emoji Check-In Buttons */}
+                        {message.showEmojiButtons && !hasCompletedDailyCheckIn && (
+                            <div className="flex justify-start mt-3">
+                                <div className="grid grid-cols-2 gap-2 max-w-[75%]">
+                                    <button
+                                        onClick={() => handleEmojiCheckIn('🙂', 'Bien')}
+                                        className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all text-left font-medium flex items-center gap-2 hover:bg-green-50"
+                                        disabled={submittingCheckIn}
+                                    >
+                                        <span className="text-2xl">🙂</span>
+                                        <span>Bien</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleEmojiCheckIn('😐', 'Regular')}
+                                        className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all text-left font-medium flex items-center gap-2 hover:bg-yellow-50"
+                                        disabled={submittingCheckIn}
+                                    >
+                                        <span className="text-2xl">😐</span>
+                                        <span>Regular</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleEmojiCheckIn('🙁', 'Mal')}
+                                        className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all text-left font-medium flex items-center gap-2 hover:bg-orange-50"
+                                        disabled={submittingCheckIn}
+                                    >
+                                        <span className="text-2xl">🙁</span>
+                                        <span>Mal</span>
+                                    </button>
+                                    <button
+                                        onClick={() => handleEmojiCheckIn('🆘', 'Muy mal')}
+                                        className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-all text-left font-medium flex items-center gap-2 hover:bg-red-50"
+                                        disabled={submittingCheckIn}
+                                    >
+                                        <span className="text-2xl">🆘</span>
+                                        <span>Muy mal</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
 
                 {/* Quick Action Buttons */}
-                {showQuickActions && messages.length === 1 && (
+                {showQuickActions && messages.length === 2 && !hasCompletedDailyCheckIn && (
                     <div className="flex flex-col gap-2 mt-4">
-                        <button
-                            onClick={() => handleQuickAction('¿Qué tengo que hacer hoy?')}
-                            className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left font-medium"
-                        >
-                            ¿Qué tengo que hacer hoy?
-                        </button>
+                        <p className="text-sm text-gray-600 text-center mb-2">O pregúntame sobre:</p>
                         <button
                             onClick={() => handleQuickAction('Recuérdame la medicación')}
                             className="bg-white text-gray-800 px-4 py-3 rounded-lg shadow-sm hover:shadow-md transition-shadow text-left font-medium"
@@ -211,6 +402,20 @@ export default function Companion() {
                         </button>
                     </div>
                 )}
+
+                {/* Loading indicator for check-in submission */}
+                {submittingCheckIn && (
+                    <div className="flex justify-start">
+                        <div className="bg-white rounded-lg px-4 py-2 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#25d366]"></div>
+                                <p className="text-sm text-gray-600">Registrando tu estado...</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div ref={messagesEndRef} />
             </div>
 
             {/* Disclaimer */}
@@ -230,10 +435,11 @@ export default function Companion() {
                         onKeyPress={handleKeyPress}
                         placeholder="Escribe un mensaje..."
                         className="flex-1 outline-none text-base bg-transparent"
+                        disabled={submittingCheckIn}
                     />
                     <button
                         onClick={handleSendMessage}
-                        disabled={!inputValue.trim()}
+                        disabled={!inputValue.trim() || submittingCheckIn}
                         className="text-[#25d366] disabled:text-gray-300 hover:text-[#128c7e] transition-colors"
                     >
                         <Send size={24} />

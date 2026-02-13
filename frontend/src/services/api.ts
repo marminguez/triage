@@ -37,5 +37,24 @@ export const api = {
         });
         if (!res.ok) throw new Error('Failed to update case');
         return res.json();
+    },
+
+    submitCheckIn: async (caseId: string, freeText: string) => {
+        const res = await fetch(`/api/case/${caseId}/checkin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ freeText }),
+        });
+        if (!res.ok) {
+            const errorBody = await res.json().catch(() => ({}));
+            throw new Error(errorBody.error || 'Failed to submit check-in');
+        }
+        return res.json();
+    },
+
+    getCheckIns: async (caseId: string) => {
+        const res = await fetch(`/api/case/${caseId}/checkins`);
+        if (!res.ok) throw new Error('Failed to fetch check-ins');
+        return res.json();
     }
 };
