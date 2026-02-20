@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import Layout from '../components/Layout';
 
 export default function UserProfile() {
+    const [language, setLanguage] = useState('es');
     return (
         <Layout>
             <div className="max-w-[1200px] mx-auto">
@@ -183,7 +185,27 @@ export default function UserProfile() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="mt-8 flex justify-end">
+
+                            {/* Language Selector */}
+                            <div className="md:col-span-2 flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-white">Idioma de la Interfaz</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Selecciona el idioma de visualización</p>
+                                </div>
+                                <select
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    className="ml-4 px-3 py-1.5 text-sm border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
+                                >
+                                    <option value="es">Español</option>
+                                    <option value="en">Inglés</option>
+                                    <option value="de">Alemán</option>
+                                    <option value="fr">Francés</option>
+                                    <option value="it">Italiano</option>
+                                </select>
+                            </div>
+
+                            <div className="mt-8 flex justify-end md:col-span-2">
                                 <button className="bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold transition-all hover:bg-blue-700 shadow-md">Guardar Cambios</button>
                             </div>
                         </div>

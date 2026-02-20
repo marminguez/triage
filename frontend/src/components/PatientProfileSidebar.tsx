@@ -113,16 +113,20 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
                     </div>
                 </div>
 
-                {/* WhatsApp Toggle */}
-                <div className="mt-6 bg-[#25D366]/10 rounded-lg p-4 border border-[#25D366]/20">
-                    <div className="flex items-center justify-between mb-2">
+                {/* WhatsApp / Canal de acompañamiento */}
+                <div className="mt-6 rounded-xl border border-[#25D366]/30 overflow-hidden">
+                    {/* Header row */}
+                    <div className="flex items-center justify-between px-4 pt-4 pb-2">
                         <div className="flex items-center gap-2">
-                            <span className="text-[#25D366] font-bold text-sm flex items-center gap-1">
-                                <span className="material-symbols-outlined text-lg">chat</span>
-                                Chatbot WhatsApp
+                            <div className="w-6 h-6 rounded-full bg-[#25D366] flex items-center justify-center flex-shrink-0">
+                                <span className="material-symbols-outlined text-white text-sm">chat</span>
+                            </div>
+                            <span className="text-sm font-bold text-slate-800 dark:text-white leading-tight">
+                                Canal de acompañamiento<br />
+                                <span className="text-[#25D366] font-bold">(WhatsApp)</span>
                             </span>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
+                        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                             <input
                                 type="checkbox"
                                 className="sr-only peer"
@@ -130,27 +134,28 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
                                 onChange={async (e) => {
                                     if (!caseItem) return;
                                     const newValue = e.target.checked;
-                                    // Optimistic update
                                     setCaseItem(prev => prev ? ({ ...prev, whatsapp_chatbot_enabled: newValue }) : null);
                                     try {
                                         await api.updateCase(caseItem.id, { whatsapp_chatbot_enabled: newValue });
                                     } catch (err) {
                                         console.error(err);
-                                        // Revert on error
                                         setCaseItem(prev => prev ? ({ ...prev, whatsapp_chatbot_enabled: !newValue }) : null);
                                         alert("Error al actualizar el estado del chat.");
                                     }
                                 }}
                             />
-                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#25D366]/50 dark:peer-focus:ring-[#25D366]/80 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-[#25D366]"></div>
+                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#25D366]/50 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#25D366]"></div>
                         </label>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-snug">
-                        {caseItem?.whatsapp_chatbot_enabled
-                            ? "Activo: El asistente virtual enviará recordatorios y responderá dudas básicas."
-                            : "Inactivo: Actívalo para permitir que el paciente reciba ayuda por WhatsApp."
-                        }
-                    </p>
+                    {/* Status + disclaimer */}
+                    <div className="px-4 pb-4">
+                        <p className="text-[11px] font-semibold mb-1 mt-1" style={{ color: caseItem?.whatsapp_chatbot_enabled ? '#25D366' : '#94a3b8' }}>
+                            {caseItem?.whatsapp_chatbot_enabled ? 'Activo.' : 'Inactivo.'}
+                        </p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                            Actívalo para permitir que el paciente reciba ayuda por WhatsApp. Requiere consentimiento.
+                        </p>
+                    </div>
                 </div>
                 <div className="mt-8 flex flex-col gap-2">
                     <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-md">

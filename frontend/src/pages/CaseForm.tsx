@@ -105,6 +105,7 @@ export default function CaseForm() {
                         <p className="font-bold mb-1">Instrucciones de Valoración</p>
                         <ul className="list-disc list-inside space-y-1 opacity-90">
                             <li>Complete los datos demográficos del paciente.</li>
+                            <li>Escala orientativa para priorización, no diagnóstico.</li>
                             <li>Califique los indicadores de vulnerabilidad en una escala de <strong>0 a 10</strong>.</li>
                             <li><strong>0</strong> = Sin riesgo, <strong>10</strong> = Riesgo Crítico.</li>
                             <li>Valores superiores a <strong>5</strong> serán marcados automáticamente como de riesgo para revisión prioritaria.</li>
@@ -263,7 +264,8 @@ export default function CaseForm() {
                 </div>
 
                 <div className="border-t border-gray-100 dark:border-slate-700 pt-6">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Notas de Riesgo (Contexto)</label>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Notas de Riesgo (Contexto)</label>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-2">Evitar datos especialmente sensibles en texto libre. Registrar solo lo necesario.</p>
                     <textarea
                         name="risk_notes"
                         rows={3}
