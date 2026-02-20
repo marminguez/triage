@@ -102,7 +102,7 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
                                 const newVal = e.target.value;
                                 setCaseItem(prev => prev ? ({ ...prev, agreed_guidelines: newVal }) : null);
                             }}
-                            onBlur={async (e) => {
+                            onBlur={async () => {
                                 try {
                                     await api.updateCase(caseItem.id, { agreed_guidelines: caseItem.agreed_guidelines });
                                 } catch (err) {
@@ -193,4 +193,3 @@ export default function PatientProfileSidebar({ caseItem, setCaseItem }: Patient
         </aside >
     );
 }
-
