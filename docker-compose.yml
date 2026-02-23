@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      - ML_SERVICE_URL=http://ml_service:5001/ml_score
+      - PORT=3001
+    depends_on:
+      - ml_service
+
+  ml_service:
+    build:
+      context: ./ml_service
+    ports:
+      - "5001:5001"
+#   environment:
+#      - FLASK_ENV=production
